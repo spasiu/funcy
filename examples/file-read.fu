@@ -1,0 +1,9 @@
+@process_file path => {
+  @result $IO.read_file(path);
+  @error at(result, 0);
+  @contents at(result, 1);
+  if(exists(error), 
+    [error: error, success: false],
+    [error: null, success: true, data: contents]
+  );
+};

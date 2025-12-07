@@ -1,0 +1,24 @@
+{
+  "name": "funcy",
+  "version": "0.1.0",
+  "description": "Funcy - A purely functional language that compiles to TypeScript and JavaScript",
+  "main": "dist/index.js",
+  "bin": {
+    "funcy": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node dist/test.js",
+    "test:types": "node dist/type-test.js"
+  },
+  "keywords": ["functional", "compiler", "typescript", "javascript"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}

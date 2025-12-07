@@ -1,0 +1,6 @@
+// This is a comment at the start
+@x 1;
+// Comment between statements
+@y 2;
+@sum x + y; // Trailing comment
+@output log(sum);

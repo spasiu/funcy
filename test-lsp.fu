@@ -1,0 +1,32 @@
+// Test file for language server features
+
+// Variable declarations
+@x 42;
+@message "Hello, Funcy!";
+@numbers [1, 2, 3, 4, 5];
+
+// Function with types
+@add x:int, y:int => x + y;
+
+// Recursive function
+@factorial n:int => if(n = 0, 1, n * *(n - 1));
+
+// Multiple return values
+@math_ops x, y => x + y, x - y, x * y;
+
+// Using built-in functions
+@doubled Array.map(numbers, n => n * 2);
+@result log(doubled);
+
+// Map operations
+@person [name: "Alice", age: 30];
+@name Map.get(person, "name");
+
+// Error handling
+@error, @value capture({
+  @result factorial(5);
+  log(result);
+});
+
+// Async example (commented to avoid runtime errors)
+// @response $Fetch.get("https://api.example.com");

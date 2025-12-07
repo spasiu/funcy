@@ -1,0 +1,10 @@
+// Test compile-time and runtime type checking with valid types
+@add x:int, y:int => x + y;
+@greet name:string => "Hello, " + name;
+@is_adult age:int => age >= 18;
+@sum add(5, 10);
+@message greet("Alice");
+@adult is_adult(25);
+log("Sum:", sum);
+log("Message:", message);
+log("Is adult:", adult);

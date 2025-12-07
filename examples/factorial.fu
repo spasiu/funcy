@@ -1,0 +1,5 @@
+// Factorial function with recursion optimization
+@factorial n => if(n = 0, 1, n * *(n - 1));
+
+@result factorial(5);
+@output log(result);

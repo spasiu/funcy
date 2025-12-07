@@ -1,0 +1,3 @@
+// Simple hello world example
+@greeting "Hello, Funcy!";
+@result log(greeting);

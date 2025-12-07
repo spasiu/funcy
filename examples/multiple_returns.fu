@@ -1,0 +1,6 @@
+@math_ops x, y => x + y, x - y, x * y, x / y;
+@sum, @diff, @product, @quotient math_ops(20, 4);
+@output1 log([sum: sum, diff: diff, product: product, quotient: quotient]);
+
+@error, @contents $IO.read_file("funcy_input.txt");
+@output2 log([error: error, has_contents: exists(contents)]);

@@ -1,0 +1,4 @@
+// Test runtime type checking with invalid types (should fail)
+@add x:int, y:int => x + y;
+@result add("5", 10);
+log(result);

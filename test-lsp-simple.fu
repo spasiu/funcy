@@ -1,0 +1,6 @@
+@x 42;
+@message "Hello, Funcy!";
+@numbers [1, 2, 3, 4, 5];
+@add x:int, y:int => x + y;
+@factorial n:int => if(n = 0, 1, n * *(n - 1));
+@doubled Array.map(numbers, n => n * 2);

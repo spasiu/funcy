@@ -1,0 +1,16 @@
+// Comprehensive type checking test
+@add_ints x:int, y:int => x + y;
+@concat_strings a:string, b:string => a + b;
+@check_bool flag:bool => if(flag, "yes", "no");
+@process_array arr:array => length(arr);
+@get_from_map m:map, key:string => Map.get(m, key);
+@test_int add_ints(10, 20);
+@test_string concat_strings("Hello", " World");
+@test_bool check_bool(true);
+@test_array process_array([1, 2, 3, 4, 5]);
+@test_map get_from_map([name: "Bob", age: 30], "name");
+log("Int test:", test_int);
+log("String test:", test_string);
+log("Bool test:", test_bool);
+log("Array test:", test_array);
+log("Map test:", test_map);

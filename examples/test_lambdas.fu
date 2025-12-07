@@ -1,0 +1,5 @@
+@numbers [1, 2, 3, 4, 5];
+@doubled map(numbers, x => x * 2);
+@big filter(numbers, n => n > 2);
+@sum reduce(numbers, (acc, n) => acc + n, 0);
+@output log([doubled: doubled, big: big, sum: sum]);

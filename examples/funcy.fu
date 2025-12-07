@@ -1,0 +1,19 @@
+@error, @contents $IO.read_file("funcy_input.txt");
+@lines String.split(contents, "\n");
+@ops filter(String.split(String.trim(at(lines, length(lines) - 1)), " "), op => String.length(op) > 0);
+@data Array.slice(lines, 0, length(lines) - 1);
+@col i => {
+  @get idx, s => if(idx = length(data), s, get(idx + 1, String.concat(s, String.at(at(data, idx), i))));
+  get(0, "");
+};
+
+@cols idx, acc => if(idx = String.length(at(data, 0)), acc, cols(idx + 1, append(acc, String.trim(col(idx)))));
+@groups String.split(Array.join(cols(0, []), ","), ",,");
+@calc g, i => {
+  @nums map(String.split(g, ","), s => Number.parseInt(s, 10));
+  if(at(ops, i) = "*", reduce(nums, (a, b) => a * b, 1), reduce(nums, (a, b) => a + b, 0));
+};
+
+
+@process i, acc => if(i = length(groups), acc, process(i + 1, append(acc, calc(at(groups, i), i))));
+@output log([n: reduce(process(0, []), (a, b) => a + b, 0)]);

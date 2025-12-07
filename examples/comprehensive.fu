@@ -1,0 +1,25 @@
+// Comprehensive Funcy example showcasing multiple features
+@numbers [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+@person [name: "Alice", age: 30, active: true];
+@double x => x * 2;
+@is_even n => if((n / 2) * 2 = n, true, false);
+@apply_to_all list, fn => map(list, fn);
+@sum_range n => if(n = 0, 0, n + *(n - 1));
+@add_nums acc, n => acc + n;
+@get_total list => reduce(list, add_nums, 0);
+@get_count list => length(list);
+@get_avg list => get_total(list) / get_count(list);
+@doubled apply_to_all(numbers, double);
+@evens filter(numbers, is_even);
+@range_sum sum_range(10);
+@total get_total(numbers);
+@count get_count(numbers);
+@average get_avg(numbers);
+log("Original:", numbers);
+log("Doubled:", doubled);
+log("Evens:", evens);
+log("Sum 1-10:", range_sum);
+log("Total:", total);
+log("Count:", count);
+log("Average:", average);
+log("Person:", person);
