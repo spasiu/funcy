@@ -1,0 +1,41 @@
+# Source files
+src/
+*.ts
+tsconfig.json
+
+# Test files
+test/
+test-*.fu
+test-*.js
+test-project/
+test-temp/
+examples/
+
+# Development files
+.git/
+.gitignore
+.vscode/
+vscode-funcy/
+.temp/
+
+# Documentation (keep README.md)
+LANGUAGE_REFERENCE.md
+LANGUAGE_SERVER_README.md
+QUICKSTART.md
+CLI.md
+TYPE_CHECKING.md
+TESTING_SUMMARY.md
+NPM_PUBLISHING.md
+language.md
+
+# Build artifacts
+bundle.js
+test-language-server.js
+test-extension-demo.fu
+test-lsp-simple.fu
+test-lsp.fu
+
+# Other
+node_modules/
+.DS_Store
+*.log

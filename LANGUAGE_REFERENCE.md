@@ -467,10 +467,45 @@ Await promises using the `$` operator:
 @result $fetch_data();
 
 // With error handling
-@error, @response $Fetch.get("https://api.example.com");
+@error, @response $IO.get("https://api.example.com");
 
 if(exists(error), log(error), log(response));
 ```
+
+### Automatic Async Function Generation
+
+When you use the `$` operator inside a function, the transpiler **automatically** makes that function `async`. You don't need to manually declare functions as async.
+
+**Funcy code:**
+```funcy
+@read_file filename => {
+  @error, @content $IO.read_file(filename);
+  if(exists(error), throw(error), content);
+};
+
+@data $read_file("./data.txt");
+log(data);
+```
+
+**Compiled JavaScript:**
+```javascript
+const read_file = async function(filename) {
+  return (async function() {
+    const [error, content] = await IO.read_file(filename);
+    return (exists(error) ? throw(error) : content);
+  })();
+};
+const data = await read_file("./data.txt");
+log(data);
+```
+
+Notice:
+- The function is automatically marked as `async`
+- Block expressions (IIFEs) containing `$` are also marked as `async`
+- Top-level code with `$` is wrapped in an async IIFE
+- Lambda expressions with `$` also become async
+
+This makes asynchronous code seamless and natural to write without explicit async/await keywords.
 
 ### Event Subscriptions
 

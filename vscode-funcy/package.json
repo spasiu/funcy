@@ -1,9 +1,10 @@
 {
-  "name": "funcy-lang",
-  "displayName": "Funcy Language Support",
+  "name": "funcy-syntax-highlighting",
+  "displayName": "syntax highlighting for .fu files",
   "description": "Syntax highlighting for the Funcy programming language",
   "version": "0.1.0",
-  "publisher": "funcy",
+  "publisher": "spasiu",
+  "repository": "https://github.com/spasiu/funcy",
   "engines": {
     "vscode": "^1.60.0"
   },

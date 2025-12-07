@@ -126,7 +126,11 @@ export class CodeGenerator {
     this.functionDepth--;
     this.currentFunctionName = oldFunctionName;
 
-    const funcCode = `${this.indent()}const ${node.name} = function(${params}) {\n${body}${this.indent()}};\n`;
+    // Check if function contains await expressions
+    const isAsync = this.containsAwait(node.body);
+    const asyncKeyword = isAsync ? 'async ' : '';
+
+    const funcCode = `${this.indent()}const ${node.name} = ${asyncKeyword}function(${params}) {\n${body}${this.indent()}};\n`;
     
     if (node.exports) {
       return funcCode + `module.exports.${node.name} = ${node.name};\n`;
@@ -427,8 +431,12 @@ export class CodeGenerator {
   }
 
   private generateBlockExpression(node: AST.BlockExpressionNode): string {
+    // Check if block contains await expressions
+    const hasAwait = node.body.some(stmt => this.containsAwait(stmt));
+    const asyncKeyword = hasAwait ? 'async ' : '';
+    
     // Generate IIFE for block scope
-    let code = '(function() {\n';
+    let code = `(${asyncKeyword}function() {\n`;
     this.indentLevel++;
     
     for (let i = 0; i < node.body.length; i++) {
@@ -476,7 +484,9 @@ export class CodeGenerator {
   private generateLambdaExpression(node: AST.LambdaExpressionNode): string {
     const params = node.parameters.map(p => p.name).join(', ');
     const body = this.generateExpression(node.body);
-    return `function(${params}) { return ${body}; }`;
+    const isAsync = this.containsAwait(node.body);
+    const asyncKeyword = isAsync ? 'async ' : '';
+    return `${asyncKeyword}function(${params}) { return ${body}; }`;
   }
 
   private generateImportDeclaration(node: AST.ImportDeclarationNode): string {

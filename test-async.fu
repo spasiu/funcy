@@ -1,0 +1,8 @@
+@read filename => {
+    @error, @content $IO.read_file(filename);
+    content;
+};
+
+@content $read('./2025_12_07_test.txt');
+
+log(content);
