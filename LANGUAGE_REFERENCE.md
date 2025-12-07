@@ -390,6 +390,22 @@ Use `throw` to raise an error:
 @validate x => if(x < 0, throw("Value must be positive"), x);
 ```
 
+**Lazy Evaluation in Conditionals:**
+
+When `throw()` is used inside an `if` expression, it's automatically wrapped in a lazy-evaluated function (IIFE) by the transpiler. This allows it to work correctly in ternary operators:
+
+**Funcy code:**
+```funcy
+@result if(has_error, throw("Error!"), success_value);
+```
+
+**Compiled JavaScript:**
+```javascript
+const result = (has_error ? (() => { funcy.throw("Error!"); })() : success_value);
+```
+
+This ensures the throw only executes when that branch of the conditional is taken, making error handling seamless.
+
 ### Capturing Errors
 
 Use `capture` to handle errors:
@@ -492,7 +508,7 @@ log(data);
 const read_file = async function(filename) {
   return (async function() {
     const [error, content] = await IO.read_file(filename);
-    return (exists(error) ? throw(error) : content);
+    return (exists(error) ? (() => { funcy.throw(error); })() : content);
   })();
 };
 const data = await read_file("./data.txt");

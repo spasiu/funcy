@@ -3,6 +3,6 @@
     if(exists(error), throw(error), content);
 };
 
-@content $read('./2025_12_07_test.txt');
+@content $read('./nonexistent.txt');
 
 log(content);

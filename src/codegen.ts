@@ -393,9 +393,10 @@ export class CodeGenerator {
         throw new Error(`if() requires 2 or 3 arguments, got ${node.arguments.length}`);
       }
       const condition = this.generateExpression(node.arguments[0]);
-      const consequent = this.generateExpression(node.arguments[1]);
+      // Wrap throw() calls in IIFE for lazy evaluation
+      const consequent = this.wrapThrowInTernary(node.arguments[1]);
       const alternate = node.arguments.length === 3 ? 
-        this.generateExpression(node.arguments[2]) : 'null';
+        this.wrapThrowInTernary(node.arguments[2]) : 'null';
       return `(${condition} ? ${consequent} : ${alternate})`;
     }
     
@@ -403,6 +404,18 @@ export class CodeGenerator {
     const args = node.arguments.map(arg => this.generateExpression(arg)).join(', ');
     
     return `${callee}(${args})`;
+  }
+
+  private wrapThrowInTernary(node: AST.ASTNode): string {
+    // Check if this is a throw() call
+    if (node.type === 'CallExpression' && 
+        node.callee.type === 'Identifier' && 
+        node.callee.name === 'throw') {
+      // Wrap in IIFE to make it lazy
+      const args = node.arguments.map(arg => this.generateExpression(arg)).join(', ');
+      return `(() => { funcy.throw(${args}); })()`;
+    }
+    return this.generateExpression(node);
   }
 
   private generateMemberExpression(node: AST.MemberExpressionNode): string {
