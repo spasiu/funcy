@@ -4,6 +4,7 @@ export class CodeGenerator {
   private indentLevel: number = 0;
   private functionDepth: number = 0;
   private currentFunctionName: string = '';
+  private functionOverloads: Map<string, AST.FunctionDeclarationNode[]> = new Map();
 
   private indent(): string {
     return '  '.repeat(this.indentLevel);
@@ -21,6 +22,18 @@ export class CodeGenerator {
     code += `const Number = funcy.Number;\n`;
     code += `const IO = funcy.IO;\n`;
     code += `const { z } = require('zod');\n\n`;
+    
+    // First pass: collect function overloads
+    this.functionOverloads.clear();
+    for (const statement of node.body) {
+      if (statement.type === 'FunctionDeclaration') {
+        const funcName = statement.name;
+        if (!this.functionOverloads.has(funcName)) {
+          this.functionOverloads.set(funcName, []);
+        }
+        this.functionOverloads.get(funcName)!.push(statement);
+      }
+    }
     
     // Check if any top-level statement uses await
     const hasTopLevelAsync = node.body.some(stmt => this.containsAwait(stmt));
@@ -81,14 +94,51 @@ export class CodeGenerator {
       return this.indent() + `const [${names}] = ${value};\n`;
     }
     
-    if (node.exports) {
-      return this.indent() + `const ${node.name} = ${value};\nmodule.exports.${node.name} = ${node.name};\n`;
+    let code = '';
+    
+    // Generate type validation if type annotation is present
+    if (node.typeAnnotation) {
+      const zodSchema = this.getZodSchemaForType(node.typeAnnotation);
+      const typeName = this.getTypeDisplayName(node.typeAnnotation);
+      const tempVar = `${node.name}_temp`;
+      
+      code += this.indent() + `const ${tempVar} = ${value};\n`;
+      code += this.indent() + `const ${node.name}_schema = ${zodSchema};\n`;
+      code += this.indent() + `const ${node.name}_result = ${node.name}_schema.safeParse(${tempVar});\n`;
+      code += this.indent() + `if (!${node.name}_result.success) {\n`;
+      code += this.indent() + `  throw new Error(\`Type validation failed for variable '${node.name}': expected ${typeName}, got \${typeof ${tempVar}}\`);\n`;
+      code += this.indent() + `}\n`;
+      code += this.indent() + `const ${node.name} = ${tempVar};\n`;
+    } else {
+      code += this.indent() + `const ${node.name} = ${value};\n`;
     }
     
-    return this.indent() + `const ${node.name} = ${value};\n`;
+    if (node.exports) {
+      code += `module.exports.${node.name} = ${node.name};\n`;
+    }
+    
+    return code;
   }
 
   private generateFunctionDeclaration(node: AST.FunctionDeclarationNode): string {
+    const overloads = this.functionOverloads.get(node.name) || [];
+    
+    // If this function has overloads, only generate code on the first occurrence
+    if (overloads.length > 1) {
+      const firstOverload = overloads[0];
+      if (node !== firstOverload) {
+        // Skip non-first overloads
+        return '';
+      }
+      // Generate dispatcher for overloaded function
+      return this.generateOverloadedFunction(node.name, overloads);
+    }
+    
+    // Single function - generate normally
+    return this.generateSingleFunction(node);
+  }
+
+  private generateSingleFunction(node: AST.FunctionDeclarationNode): string {
     const oldFunctionName = this.currentFunctionName;
     this.currentFunctionName = node.name;
     this.functionDepth++;
@@ -137,6 +187,65 @@ export class CodeGenerator {
     }
     
     return funcCode;
+  }
+
+  private generateOverloadedFunction(name: string, overloads: AST.FunctionDeclarationNode[]): string {
+    let code = '';
+    
+    // Sort overloads by arity (parameter count) for consistent ordering
+    const sortedOverloads = [...overloads].sort((a, b) => a.parameters.length - b.parameters.length);
+    
+    // Generate implementation functions for each overload
+    for (let i = 0; i < sortedOverloads.length; i++) {
+      const overload = sortedOverloads[i];
+      const arity = overload.parameters.length;
+      const implName = `${name}_$${arity}`;
+      
+      // Temporarily change the function name for generation
+      const tempNode = { ...overload, name: implName };
+      code += this.generateSingleFunction(tempNode);
+    }
+    
+    // Generate dispatcher function
+    const anyAsync = sortedOverloads.some(o => this.containsAwait(o.body));
+    const asyncKeyword = anyAsync ? 'async ' : '';
+    
+    code += `${this.indent()}const ${name} = ${asyncKeyword}function(...args) {\n`;
+    this.indentLevel++;
+    
+    // Generate switch based on arguments.length
+    code += `${this.indent()}switch (args.length) {\n`;
+    this.indentLevel++;
+    
+    for (const overload of sortedOverloads) {
+      const arity = overload.parameters.length;
+      const implName = `${name}_$${arity}`;
+      const params = overload.parameters.map((_, idx) => `args[${idx}]`).join(', ');
+      
+      code += `${this.indent()}case ${arity}:\n`;
+      this.indentLevel++;
+      code += `${this.indent()}return ${implName}(${params});\n`;
+      this.indentLevel--;
+    }
+    
+    // Default case - error
+    code += `${this.indent()}default:\n`;
+    this.indentLevel++;
+    code += `${this.indent()}throw new Error(\`No overload of '${name}' matches \${args.length} argument(s)\`);\n`;
+    this.indentLevel--;
+    
+    this.indentLevel--;
+    code += `${this.indent()}}\n`;
+    
+    this.indentLevel--;
+    code += `${this.indent()}};\n`;
+    
+    // Handle exports
+    if (sortedOverloads[0].exports) {
+      code += `module.exports.${name} = ${name};\n`;
+    }
+    
+    return code;
   }
 
   private containsRecursion(node: AST.ASTNode): boolean {
@@ -266,16 +375,55 @@ export class CodeGenerator {
     
     for (const param of parameters) {
       if (param.typeAnnotation) {
-        const zodSchema = this.getZodSchema(param.typeAnnotation.name);
+        const zodSchema = this.getZodSchemaForType(param.typeAnnotation);
+        const typeName = this.getTypeDisplayName(param.typeAnnotation);
         validation += `  const ${param.name}_schema = ${zodSchema};\n`;
         validation += `  const ${param.name}_result = ${param.name}_schema.safeParse(${param.name});\n`;
         validation += `  if (!${param.name}_result.success) {\n`;
-        validation += `    throw new Error(\`Type validation failed for parameter '${param.name}': expected ${param.typeAnnotation.name}, got \${typeof ${param.name}}\`);\n`;
+        validation += `    throw new Error(\`Type validation failed for parameter '${param.name}': expected ${typeName}, got \${typeof ${param.name}}\`);\n`;
         validation += `  }\n`;
       }
     }
     
     return validation;
+  }
+
+  private getTypeDisplayName(typeAnnotation: AST.TypeAnnotationNode): string {
+    if (typeAnnotation.generics && typeAnnotation.generics.length > 0) {
+      const genericNames = typeAnnotation.generics.map(g => this.getTypeDisplayName(g)).join(', ');
+      return `${typeAnnotation.name}<${genericNames}>`;
+    }
+    return typeAnnotation.name;
+  }
+
+  private getZodSchemaForType(typeAnnotation: AST.TypeAnnotationNode): string {
+    const typeName = typeAnnotation.name.toLowerCase();
+    
+    // Handle generic types
+    if (typeAnnotation.generics && typeAnnotation.generics.length > 0) {
+      switch (typeName) {
+        case 'array':
+          const elementType = this.getZodSchemaForType(typeAnnotation.generics[0]);
+          return `z.array(${elementType})`;
+        case 'map':
+          // For map, we can support map<ValueType> or map<KeyType, ValueType>
+          if (typeAnnotation.generics.length === 1) {
+            const valueType = this.getZodSchemaForType(typeAnnotation.generics[0]);
+            return `z.record(${valueType})`;
+          } else if (typeAnnotation.generics.length === 2) {
+            // Zod doesn't have strong key typing, so we just use the value type
+            const valueType = this.getZodSchemaForType(typeAnnotation.generics[1]);
+            return `z.record(${valueType})`;
+          }
+          return 'z.record(z.any())';
+        default:
+          // Unknown generic type, fall back to any
+          return 'z.any()';
+      }
+    }
+    
+    // Non-generic types
+    return this.getZodSchema(typeName);
   }
 
   private getZodSchema(type: string): string {

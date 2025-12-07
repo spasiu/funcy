@@ -1,0 +1,26 @@
+// Test array with element type
+@process_strings lines:array<string> => {
+    Array.at(lines, 0);
+};
+
+@strings ["hello", "world", "funcy"];
+@first process_strings(strings);
+log(first);
+
+// Test array with int type
+@sum_ints nums:array<int> => {
+    Array.at(nums, 0) + Array.at(nums, 1);
+};
+
+@numbers [10, 20, 30];
+@total sum_ints(numbers);
+log(total);
+
+// Test map with value type
+@get_name person:map<string> => {
+    Map.get(person, "name");
+};
+
+@person [name: "Alice", age: "30"];
+@name get_name(person);
+log(name);

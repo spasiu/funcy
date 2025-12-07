@@ -1,0 +1,15 @@
+@read filename => {
+    @error, @content $IO.read_file(filename);
+    if(exists(error), throw(error), content);
+};
+
+@calc_state lines:array<string>, beams:array<int>, splits:int, index:int => {
+    Array.at(lines, index);
+};
+
+@calc_state lines => calc_state(lines, [], 0, 0);
+
+@content $read('./2025_12_07_test.txt');
+@lines String.split(content, '\n');
+@beams calc_state(lines);
+log(beams);

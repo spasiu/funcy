@@ -1,0 +1,23 @@
+// Test 1: Simple overloading
+@greet name => "Hello, " + name;
+@greet name, title => title + " " + name;
+
+log(greet("Alice"));
+log(greet("Alice", "Dr."));
+
+// Test 2: Overloading with type annotations
+@process data:array => Array.length(data);
+@process data:array, index:int => Array.at(data, index);
+
+@nums [10, 20, 30, 40];
+log(process(nums));
+log(process(nums, 2));
+
+// Test 3: Convenience wrapper pattern
+@calc a, b, c, d => a + b + c + d;
+@calc a => calc(a, 0, 0, 0);
+@calc a, b => calc(a, b, 0, 0);
+
+log(calc(1));
+log(calc(1, 2));
+log(calc(1, 2, 3, 4));

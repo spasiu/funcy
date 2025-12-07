@@ -79,6 +79,13 @@ export class Parser {
 
     const name = this.expect(TokenType.IDENTIFIER).value;
     
+    // Check for optional type annotation: @name:type
+    let typeAnnotation: AST.TypeAnnotationNode | undefined;
+    if (this.match(TokenType.COLON)) {
+      this.advance(); // consume :
+      typeAnnotation = this.parseTypeAnnotation();
+    }
+    
     // Check for multiple variable declarations: @var1, @var2, @var3
     const names: string[] = [name];
     while (this.match(TokenType.COMMA)) {
@@ -94,8 +101,8 @@ export class Parser {
     
     // Only single names can be functions
     if (names.length === 1 && this.match(TokenType.IDENTIFIER)) {
-      // Skip potential parameters
-      while (this.match(TokenType.IDENTIFIER) || this.match(TokenType.COMMA) || this.match(TokenType.COLON)) {
+      // Skip potential parameters (including generic type annotations)
+      while (this.match(TokenType.IDENTIFIER, TokenType.COMMA, TokenType.COLON, TokenType.LT, TokenType.GT)) {
         this.advance();
       }
       
@@ -133,6 +140,7 @@ export class Parser {
           name: names[0],  // Keep first name for backwards compatibility
           names,
           value,
+          typeAnnotation,
         };
       } else {
         // Single variable declaration
@@ -140,6 +148,7 @@ export class Parser {
           type: 'VariableDeclaration',
           name,
           value,
+          typeAnnotation,
         };
       }
     }
@@ -212,6 +221,26 @@ export class Parser {
 
   private parseTypeAnnotation(): AST.TypeAnnotationNode {
     const name = this.expect(TokenType.IDENTIFIER).value;
+    
+    // Check for generic parameters like array<string> or map<string, int>
+    if (this.match(TokenType.LT)) {
+      this.advance(); // consume <
+      const generics: AST.TypeAnnotationNode[] = [];
+      
+      // Parse first generic parameter
+      generics.push(this.parseTypeAnnotation());
+      
+      // Parse additional generic parameters (for map<K, V> etc)
+      while (this.match(TokenType.COMMA)) {
+        this.advance(); // consume ,
+        generics.push(this.parseTypeAnnotation());
+      }
+      
+      this.expect(TokenType.GT); // consume >
+      
+      return { type: 'TypeAnnotation', name, generics };
+    }
+    
     return { type: 'TypeAnnotation', name };
   }
 

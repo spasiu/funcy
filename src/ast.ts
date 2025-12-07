@@ -32,6 +32,7 @@ export interface VariableDeclarationNode {
   name: string;  // Single name for backwards compatibility
   names?: string[];  // Multiple names for destructuring
   value: ASTNode;
+  typeAnnotation?: TypeAnnotationNode;  // Optional type annotation for the variable
   exports?: string; // module name if exported
 }
 

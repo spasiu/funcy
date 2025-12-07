@@ -144,6 +144,13 @@ Variables are declared with `@` and are **immutable**:
 @x 100;  // Error: x is already declared
 ```
 
+**Exception:** Functions can be redeclared with different arities for function overloading:
+
+```funcy
+@add x => x + 1;      // OK
+@add x, y => x + y;   // OK - different arity (overload)
+```
+
 ### Multiple Variable Declaration
 
 Destructuring multiple return values:
@@ -212,6 +219,50 @@ Type checking happens at function call time, providing clear error messages for 
 - `func` - Functions (validated with `z.function()`)
 - `any` - Any type (no validation)
 
+**Structural (Generic) Types:**
+
+Funcy supports **structural types** using angle bracket syntax to specify element or value types:
+
+```funcy
+// Array with element type
+@process_strings lines:array<string> => Array.at(lines, 0);
+@process_ints nums:array<int> => Array.at(nums, 0) + Array.at(nums, 1);
+
+// Map with value type
+@get_name person:map<string> => Map.get(person, "name");
+
+// Nested structural types
+@process_matrix grid:array<array<int>> => Array.at(Array.at(grid, 0), 0);
+```
+
+**How it works:**
+
+Structural types are validated recursively at runtime:
+
+**Funcy code:**
+```funcy
+@sum_ints nums:array<int> => Array.at(nums, 0) + Array.at(nums, 1);
+@result sum_ints([10, 20]);  // OK
+@result2 sum_ints(["a", "b"]);  // Error: Type validation failed
+```
+
+**Compiled JavaScript:**
+```javascript
+const sum_ints = function(nums) {
+  const nums_schema = z.array(z.number().int());
+  const nums_result = nums_schema.safeParse(nums);
+  if (!nums_result.success) {
+    throw new Error(`Type validation failed for parameter 'nums': expected array<int>, got ${typeof nums}`);
+  }
+  return (Array.at(nums, 0) + Array.at(nums, 1));
+};
+```
+
+**Supported structural types:**
+- `array<T>` - Arrays with element type T
+- `map<T>` - Maps/objects with value type T
+- Nested types like `array<array<string>>` are fully supported
+
 ### Multiple Return Values
 
 Functions can return multiple values as tuples:
@@ -258,6 +309,65 @@ Functions can accept other functions as parameters:
 @increment n => n + 1;
 @result apply_twice(increment, 5);  // 7
 ```
+
+### Function Overloading
+
+Funcy supports **function overloading** based on arity (the number of parameters). You can declare multiple functions with the same name but different parameter counts:
+
+```funcy
+// Overload with 1 parameter
+@calc_state lines => calc_state(lines, [], 0, 0);
+
+// Overload with 4 parameters
+@calc_state lines:array, beams:array, splits:int, index:int => {
+  Array.at(lines, index);
+};
+
+@result1 calc_state(["a", "b", "c"]);           // Calls 1-param version
+@result2 calc_state(["a", "b"], [], 0, 1);       // Calls 4-param version
+```
+
+**How it works:**
+
+The transpiler generates a dispatcher function that:
+1. Checks the number of arguments passed at runtime
+2. Dispatches to the appropriate implementation
+3. Throws an error if no matching overload is found
+
+**Funcy code:**
+```funcy
+@add x => x + 1;
+@add x, y => x + y;
+
+@r1 add(5);      // 6
+@r2 add(5, 10);  // 15
+```
+
+**Compiled JavaScript:**
+```javascript
+const add_$1 = function(x) {
+  return x + 1;
+};
+const add_$2 = function(x, y) {
+  return x + y;
+};
+const add = function(...args) {
+  switch (args.length) {
+    case 1:
+      return add_$1(args[0]);
+    case 2:
+      return add_$2(args[0], args[1]);
+    default:
+      throw new Error(`No overload of 'add' matches ${args.length} argument(s)`);
+  }
+};
+```
+
+**Important notes:**
+- Overloading is based **only on arity** (number of parameters), not on parameter types
+- Each overload must have a different number of parameters
+- Type annotations on overloaded functions are validated at runtime
+- Overloaded functions can have different async behaviors (dispatcher becomes async if any overload is async)
 
 ## Operators
 
