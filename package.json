@@ -1,6 +1,6 @@
 {
   "name": "spasiu-funcy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Funcy - A purely functional language that compiles to TypeScript and JavaScript",
   "main": "dist/index.js",
   "bin": {
